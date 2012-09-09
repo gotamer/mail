@@ -1,3 +1,4 @@
+//Simple interface to Go smtp
 package mail
 
 import (
