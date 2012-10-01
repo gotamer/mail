@@ -7,9 +7,9 @@ import (
 )
 
 type Smtp struct {
-	Hostname string
+	HostName string
 	HostPort int
-	Password string
+	HostPass string
 	FromName string
 	FromAddr string
 	ToAddrs  []string
@@ -18,7 +18,7 @@ type Smtp struct {
 }
 
 func (s *Smtp) SetHostname(v string) {
-	s.Hostname = v
+	s.HostName = v
 }
 
 func (s *Smtp) SetHostport(v int) {
@@ -26,7 +26,7 @@ func (s *Smtp) SetHostport(v int) {
 }
 
 func (s *Smtp) SetPassword(v string) {
-	s.Password = v
+	s.HostPass = v
 }
 
 func (s *Smtp) SetFromName(v string) {
@@ -58,8 +58,8 @@ func (s *Smtp) SetBody(v string) {
 func (s *Smtp) Write() (err error) {
 
 	err = smtp.SendMail(
-		fmt.Sprintf("%s:%d", s.Hostname, s.HostPort),
-		smtp.PlainAuth("", s.FromAddr, s.Password, s.Hostname),
+		fmt.Sprintf("%s:%d", s.HostName, s.HostPort),
+		smtp.PlainAuth("", s.FromAddr, s.HostPass, s.HostName),
 		s.FromAddr,
 		s.ToAddrs,
 		[]byte(fmt.Sprintf("From: %s <%s>\nSubject: %s\n%s\n", s.FromName, s.FromAddr, s.Subject, s.Body)),
