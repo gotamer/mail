@@ -5,7 +5,7 @@
 // 
 // Please remember to call following from your main() 
 // until I figure out how to create a real final() method that compliments init()
-//      defer mail.final()
+//      defer mail.Final()
 package mail
 
 import (
@@ -83,11 +83,11 @@ func (s *Smtp) SetBody(v string) {
 // Be aware this only works in long running applications like
 // webservers. Be also aware that if you kill the server with Ctrl-c 
 // you may loose emailes, which are still in the pipe.
-// They will be lost for good! Use Write() if you need to be sure! 
 func (s Smtp) Send() {
 	Pipe[ai()] = s
 }
 
+// Sends an email and waits for the process to end, giving proper error feedback. 
 func (s *Smtp) Write() (err error) {
 	err = smtp.SendMail(
 		fmt.Sprintf("%s:%d", s.HostName, s.HostPort),
