@@ -12,8 +12,6 @@ import (
 	"fmt"
 	"net/smtp"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -57,12 +55,14 @@ func (s *Smtp) SetFromAddr(v string) {
 	s.FromAddr = v
 }
 
+// Add multiple comma seperated
 func (s *Smtp) SetToAddrs(addresses ...string) {
 	for _, a := range addresses {
 		s.ToAddrs = append(s.ToAddrs, a)
 	}
 }
 
+// Add one at a time
 func (s *Smtp) AddToAddr(v string) {
 	s.ToAddrs = append(s.ToAddrs, v)
 }
@@ -80,7 +80,6 @@ func (s Smtp) Send() {
 }
 
 func (s *Smtp) Write() (err error) {
-
 	err = smtp.SendMail(
 		fmt.Sprintf("%s:%d", s.HostName, s.HostPort),
 		smtp.PlainAuth("", s.FromAddr, s.HostPass, s.HostName),
@@ -107,10 +106,6 @@ func loop() {
 	}
 }
 
-// The Walker() iterates over the errors and returns them in FIFO order.   
-//		for i := range Walker() {
-//			fmt.Println(i)
-//		}
 func send() {
 	go func() {
 		//println("In go routine ")
@@ -130,13 +125,7 @@ func send() {
 // call following from main to empty the pipe
 // defer mail.final()
 func final() {
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT)
-	<-ch
-	println("CTRL-C; exiting")
-	fmt.Printf("Pipe is %g \n", Pipe)
 	for i, s := range Pipe {
-		fmt.Printf("Sending %d - %s\n", i, s)
 		if err := s.Write(); err == nil {
 			delete(Pipe, i)
 		}
