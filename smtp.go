@@ -113,7 +113,7 @@ func loop() {
 //		}
 func send() {
 	go func() {
-		println("In go routine ")
+		//println("In go routine ")
 		fmt.Printf("Checking %g\n", Pipe)
 
 		for i, s := range Pipe {
