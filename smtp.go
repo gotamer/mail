@@ -1,9 +1,25 @@
-//Simple interface to Go smtp
+// gotamer/mail  
+// Simplifies the interface to the go smtp package, and
+// creates a pipe for mail queuing.   
+// See dos at http://www.robotamer.com/html/GoTamer/Mail.html
+// 
+// Please remember to call following from your main 
+// until I figure out how to create a real final() method
+//      defer mail.final()
 package mail
 
 import (
 	"fmt"
 	"net/smtp"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+var (
+	enumerate uint
+	Pipe      = make(map[uint]Smtp)
 )
 
 type Smtp struct {
@@ -15,6 +31,10 @@ type Smtp struct {
 	ToAddrs  []string
 	Subject  string
 	Body     string
+}
+
+func init() {
+	go loop()
 }
 
 func (s *Smtp) SetHostname(v string) {
@@ -55,6 +75,10 @@ func (s *Smtp) SetBody(v string) {
 	s.Body = v
 }
 
+func (s Smtp) Send() {
+	Pipe[ai()] = s
+}
+
 func (s *Smtp) Write() (err error) {
 
 	err = smtp.SendMail(
@@ -68,4 +92,58 @@ func (s *Smtp) Write() (err error) {
 		return err
 	}
 	return nil
+}
+
+// ai() Auto Increment / enumerate 
+func ai() uint {
+	enumerate = enumerate + 1
+	return enumerate
+}
+
+func loop() {
+	for {
+		send()
+		sleep(2)
+	}
+}
+
+// The Walker() iterates over the errors and returns them in FIFO order.   
+//		for i := range Walker() {
+//			fmt.Println(i)
+//		}
+func send() {
+	go func() {
+		println("In go routine ")
+		fmt.Printf("Checking %g\n", Pipe)
+
+		for i, s := range Pipe {
+			fmt.Printf("Sending %d - %s\n", i, s)
+			if err := s.Write(); err == nil {
+				delete(Pipe, i)
+			}
+			break // Sending only one per go routine
+		}
+	}()
+	return
+}
+
+// call following from main to empty the pipe
+// defer mail.final()
+func final() {
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT)
+	<-ch
+	println("CTRL-C; exiting")
+	fmt.Printf("Pipe is %g \n", Pipe)
+	for i, s := range Pipe {
+		fmt.Printf("Sending %d - %s\n", i, s)
+		if err := s.Write(); err == nil {
+			delete(Pipe, i)
+		}
+	}
+	os.Exit(0)
+}
+
+func sleep(sec time.Duration) {
+	time.Sleep(time.Second * sec)
 }
