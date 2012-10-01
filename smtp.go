@@ -136,11 +136,11 @@ func signalCatcher() {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT)
 	<-ch
-	final()
+	Final()
 	os.Exit(0)
 }
 
-func final() {
+func Final() {
 	for i, s := range Pipe {
 		if err := s.Write(); err == nil {
 			delete(Pipe, i)
