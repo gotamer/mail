@@ -36,4 +36,5 @@ func TestSmtpSend(t *testing.T) {
 	s2.SetBody("Let's see if we get this")
 	s.Send()
 	s2.Send()
+	sleep(60)
 }

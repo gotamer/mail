@@ -1,10 +1,10 @@
 // gotamer/mail  
 // Simplifies the interface to the go smtp package, and
 // creates a pipe for mail queuing.   
-// See dos at http://www.robotamer.com/html/GoTamer/Mail.html
+// See docs at http://www.robotamer.com/html/GoTamer/Mail.html
 // 
-// Please remember to call following from your main 
-// until I figure out how to create a real final() method
+// Please remember to call following from your main() 
+// until I figure out how to create a real final() method that compliments init()
 //      defer mail.final()
 package mail
 
@@ -12,6 +12,9 @@ import (
 	"fmt"
 	"net/smtp"
 	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
 	"time"
 )
 
@@ -21,17 +24,19 @@ var (
 )
 
 type Smtp struct {
-	HostName string
-	HostPort int
-	HostPass string
-	FromName string
-	FromAddr string
-	ToAddrs  []string
-	Subject  string
-	Body     string
+	failcount uint8
+	HostName  string
+	HostPort  int
+	HostPass  string
+	FromName  string
+	FromAddr  string
+	ToAddrs   []string
+	Subject   string
+	Body      string
 }
 
 func init() {
+	//go signalCatcher()
 	go loop()
 }
 
@@ -75,6 +80,10 @@ func (s *Smtp) SetBody(v string) {
 	s.Body = v
 }
 
+// Be aware this only works in long running applications like
+// webservers. Be also aware that if you kill the server with Ctrl-c 
+// you may loose emailes, which are still in the pipe.
+// They will be lost for good! Use Write() if you need to be sure! 
 func (s Smtp) Send() {
 	Pipe[ai()] = s
 }
@@ -99,22 +108,15 @@ func ai() uint {
 	return enumerate
 }
 
-func loop() {
-	for {
-		send()
-		sleep(2)
-	}
-}
-
 func send() {
 	go func() {
-		//println("In go routine ")
-		fmt.Printf("Checking %g\n", Pipe)
-
 		for i, s := range Pipe {
-			fmt.Printf("Sending %d - %s\n", i, s)
-			if err := s.Write(); err == nil {
-				delete(Pipe, i)
+			delete(Pipe, i)
+			if err := s.Write(); err != nil {
+				s.failcount++
+				if s.failcount < 3 {
+					s.Send()
+				}
 			}
 			break // Sending only one per go routine
 		}
@@ -122,15 +124,28 @@ func send() {
 	return
 }
 
-// call following from main to empty the pipe
-// defer mail.final()
+func loop() {
+	for {
+		runtime.Gosched()
+		send()
+		sleep(1)
+	}
+}
+
+func signalCatcher() {
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT)
+	<-ch
+	final()
+	os.Exit(0)
+}
+
 func final() {
 	for i, s := range Pipe {
 		if err := s.Write(); err == nil {
 			delete(Pipe, i)
 		}
 	}
-	os.Exit(0)
 }
 
 func sleep(sec time.Duration) {
