@@ -125,10 +125,15 @@ func send() {
 }
 
 func loop() {
+	var c uint8
 	for {
-		runtime.Gosched()
+		if c > 2 {
+			c = 0
+			runtime.Gosched()
+		}
 		send()
 		sleep(1)
+		c++
 	}
 }
 
