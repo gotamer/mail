@@ -10,7 +10,7 @@ Simple interface to Go smtp
 	import "gotamer/mail" // bitbucket.org/gotamer/mail if you install with go get
 	
 	func main() {
-		s := new(Smtp)
+		s := new(mail.Smtp)
 		s.SetHostname("smtp.gmail.com")
 		s.SetHostport(587)
 		s.SetFromName("GoTamer")
