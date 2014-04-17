@@ -1,7 +1,7 @@
 package mail
 
 import (
-	"gotamer/cfg"
+	"bitbucket.org/gotamer/cfg"
 	"testing"
 )
 

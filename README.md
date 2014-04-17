@@ -1,58 +1,58 @@
 gotamer/mail
-############
+============
 
-Simple interface to Go smtp
-
-
-
+Now gotamer/mail also implements the io.Writer interface.
+ 
+```go
 	package main
-	
-	import "gotamer/mail" // bitbucket.org/gotamer/mail if you install with go get
-	
+
+	import (
+	    "fmt"
+	    
+	    "bitbucket.org/gotamer/mail"
+	)
+
 	func main() {
 		s := new(mail.Smtp)
 		s.SetHostname("smtp.gmail.com")
 		s.SetHostport(587)
 		s.SetFromName("GoTamer")
 		s.SetFromAddr("xxxx@gmail.com")
-		s.SetPassword("********")
-		s.AddToAddr("xxxx@yahoo.com")
-		s.SetSubject("GoTamer test mail")
-		s.SetBody("Let's see if we get this")
-		if err := s.Write(); err != nil {
-			// Handle your errors here
+		s.SetPassword("*********")
+		s.SetToAddrs("one@example.com", "two@example.com")
+		s.AddToAddr("three@example.com")
+		s.SetSubject("GoTamer test smtp mail")
+		s.SetBody("The Writer below should replace this default line")
+		if _, err := fmt.Fprintf(s, "Hello, smtp mail writer\n"); err != nil {
+			fmt.Println(err)
 		}
 	}
+```
+
+#### A note on the host:  
+Go SMTP does not allow to connect to SMPT servers with a self signed certs, you will get an error like following:
+
+	x509: certificate signed by unknown authority
+
+The way I got around that is by using [CAcert][1]. [CAcert][1] provides FREE digital certificates.
+
+### Links
+ * [Pkg Documantation](http://go.pkgdoc.org/bitbucket.org/gotamer/mail "GoTamer Mail Pkg Documentation")
+ * [Repository](https://bitbucket.org/gotamer/mail "GoTamer Mail Repository")
+
+
+[1]: http://www.cacert.org  "CA Cert"
 	
 
 
+________________________________________________________
 
+#### The MIT License (MIT)
 
+Copyright © 2012-2013 Dennis T Kaplan <http://www.robotamer.com>
 
-Copyright (c) 2012-2013 GoTamer. All rights reserved.
-============================================================
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of GoTamer nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

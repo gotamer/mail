@@ -1,21 +1,18 @@
-// gotamer/mail  
+// gotamer/mail
 // Simplifies the interface to the go smtp package, and
-// creates a pipe for mail queuing.   
-// See docs at http://www.robotamer.com/html/GoTamer/Mail.html
-// 
-// Please remember to call following from your main() 
-// until I figure out how to create a real final() method that compliments init()
-//      defer mail.Final()
+// creates a pipe for mail queuing.
+// It now also implements io.Writer!!
+//
 package mail
 
 import (
 	"fmt"
 	"net/smtp"
-	"os"
-	"os/signal"
+	//"os"
 	"runtime"
-	"syscall"
 	"time"
+
+	"bitbucket.org/gotamer/final"
 )
 
 var (
@@ -36,8 +33,8 @@ type Smtp struct {
 }
 
 func init() {
-	//go signalCatcher()
 	go loop()
+	final.Add(Final)
 }
 
 func (s *Smtp) SetHostname(v string) {
@@ -63,7 +60,7 @@ func (s *Smtp) SetFromAddr(v string) {
 // Add multiple comma seperated
 func (s *Smtp) SetToAddrs(addresses ...string) {
 	for _, a := range addresses {
-		s.ToAddrs = append(s.ToAddrs, a)
+		s.AddToAddr(a)
 	}
 }
 
@@ -80,29 +77,38 @@ func (s *Smtp) SetBody(v string) {
 	s.Body = v
 }
 
+// Implementing io.Writer
+func (s *Smtp) Write(data []byte) (n int, err error) {
+	n = len(data)
+	s.Body = string(data)
+	err = s.write()
+	return
+}
+
 // Be aware this only works in long running applications like
-// webservers. Be also aware that if you kill the server with Ctrl-c 
+// webservers. Be also aware that if you kill the server with Ctrl-c
 // you may loose emailes, which are still in the pipe.
 func (s Smtp) Send() {
 	Pipe[ai()] = s
 }
 
-// Sends an email and waits for the process to end, giving proper error feedback. 
-func (s *Smtp) Write() (err error) {
+func (s Smtp) SendNow() error {
+	return s.write()
+}
+
+// Sends an email and waits for the process to end, giving proper error feedback.
+func (s *Smtp) write() (err error) {
 	err = smtp.SendMail(
 		fmt.Sprintf("%s:%d", s.HostName, s.HostPort),
 		smtp.PlainAuth("", s.FromAddr, s.HostPass, s.HostName),
 		s.FromAddr,
 		s.ToAddrs,
-		[]byte(fmt.Sprintf("From: %s <%s>\nSubject: %s\n%s\n", s.FromName, s.FromAddr, s.Subject, s.Body)),
+		[]byte(fmt.Sprintf("From: %s <%s>\nSubject: %s\r\n\r\n%s\r\n", s.FromName, s.FromAddr, s.Subject, s.Body)),
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return
 }
 
-// ai() Auto Increment / enumerate 
+// ai() Auto Increment / enumerate
 func ai() uint {
 	enumerate = enumerate + 1
 	return enumerate
@@ -112,7 +118,7 @@ func send() {
 	go func() {
 		for i, s := range Pipe {
 			delete(Pipe, i)
-			if err := s.Write(); err != nil {
+			if err := s.write(); err != nil {
 				s.failcount++
 				if s.failcount < 3 {
 					s.Send()
@@ -132,27 +138,15 @@ func loop() {
 			runtime.Gosched()
 		}
 		send()
-		sleep(1)
+		time.Sleep(1 * time.Second)
 		c++
 	}
 }
 
-func signalCatcher() {
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT)
-	<-ch
-	Final()
-	os.Exit(0)
-}
-
 func Final() {
 	for i, s := range Pipe {
-		if err := s.Write(); err == nil {
+		if err := s.write(); err == nil {
 			delete(Pipe, i)
 		}
 	}
-}
-
-func sleep(sec time.Duration) {
-	time.Sleep(time.Second * sec)
 }
