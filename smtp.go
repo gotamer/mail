@@ -34,7 +34,7 @@ type Smtp struct {
 
 func init() {
 	go loop()
-	final.Add(Final)
+	final.Add(FinalMail)
 }
 
 func (s *Smtp) SetHostname(v string) {
@@ -143,7 +143,7 @@ func loop() {
 	}
 }
 
-func Final() {
+func FinalMail() {
 	for i, s := range Pipe {
 		if err := s.write(); err == nil {
 			delete(Pipe, i)
