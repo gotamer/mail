@@ -1,13 +1,16 @@
-gotamer/mail
-============
-
-
-gotamer/mail/send implements the io.Writer interface.
+gotamer/mail/send
+=================
 [![GoDoc Send](https://godoc.org/bitbucket.org/gotamer/mail/send?status.svg)](https://godoc.org/bitbucket.org/gotamer/mail/send)
 
+Sending mail with sendmail or smtp
 
-gotamer/mail/imap to get mail from an imap server
+gotamer/mail/send implements the io.Writer interface.  
+
+gotamer/mail/imap
+=================
 [![GoDoc Imap](https://godoc.org/bitbucket.org/gotamer/mail/imap?status.svg)](https://godoc.org/bitbucket.org/gotamer/mail/imap)
+
+gotamer/mail/imap to get mail from an imap server  
 
 	
 
