@@ -1,47 +1,14 @@
 gotamer/mail
 ============
 
-Now gotamer/mail also implements the io.Writer interface.
- 
-```go
-	package main
 
-	import (
-	    "fmt"
-	    
-	    "bitbucket.org/gotamer/mail"
-	)
-
-	func main() {
-		s := new(mail.Smtp)
-		s.SetHostname("smtp.gmail.com")
-		s.SetHostport(587)
-		s.SetFromName("GoTamer")
-		s.SetFromAddr("xxxx@gmail.com")
-		s.SetPassword("*********")
-		s.SetToAddrs("one@example.com", "two@example.com")
-		s.AddToAddr("three@example.com")
-		s.SetSubject("GoTamer test smtp mail")
-		s.SetBody("The Writer below should replace this default line")
-		if _, err := fmt.Fprintf(s, "Hello, smtp mail writer\n"); err != nil {
-			fmt.Println(err)
-		}
-	}
-```
-
-#### A note on the host:  
-Go SMTP does not allow to connect to SMPT servers with a self signed certs, you will get an error like following:
-
-	x509: certificate signed by unknown authority
-
-The way I got around that is by using [CAcert][1]. [CAcert][1] provides FREE digital certificates.
-
-### Links
- * [Pkg Documantation](http://go.pkgdoc.org/bitbucket.org/gotamer/mail "GoTamer Mail Pkg Documentation")
- * [Repository](https://bitbucket.org/gotamer/mail "GoTamer Mail Repository")
+gotamer/mail/send implements the io.Writer interface.
+[![GoDoc Send](https://godoc.org/bitbucket.org/gotamer/mail/send?status.svg)](https://godoc.org/bitbucket.org/gotamer/mail/send)
 
 
-[1]: http://www.cacert.org  "CA Cert"
+gotamer/mail/imap to get mail from an imap server
+[![GoDoc Imap](https://godoc.org/bitbucket.org/gotamer/mail/imap?status.svg)](https://godoc.org/bitbucket.org/gotamer/mail/imap)
+
 	
 
 
