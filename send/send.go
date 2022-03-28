@@ -40,8 +40,14 @@ type mail struct {
 func NewMail() *mail {
 	m := new(mail)
 	m.Headers = make(map[string]string)
-	//	m.sender
+	m.SetHeader("X-Mailer", "github.com/gotamer/mail")
 	return m
+}
+
+// Set from mail To addresses
+func (o *mail) SetFrom(name, email string) {
+	o.FromName = name
+	o.From = email
 }
 
 // Set mail To addresses
