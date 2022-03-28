@@ -1,7 +1,7 @@
 // sendmail, SMTP, Mail Quene & mail with io.Writer
 package send
 
-// Also check out add on bitbucket.org/gotamer/mail/quene for non blocking mail sending
+// Also check out add on github.com/gotamer/mail/quene for non blocking mail sending
 
 const (
 	EOL = "\r\n"
