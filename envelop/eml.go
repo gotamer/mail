@@ -1,3 +1,5 @@
+// Light weight email envelop creater. You can use this for sendmail, smtp, or to create .eml files
+// Works only for text emails, no html, attachments, mime etc...
 package envelop
 
 import (
@@ -7,6 +9,8 @@ import (
 	"strings"
 	"time"
 )
+
+var MessageIdLink = "gotamer.tamer.pw"
 
 type Address struct {
 	Name, Address string
@@ -61,24 +65,25 @@ func (o *envelop) SetFrom(name, email string) {
 	o.FromAddr = email
 }
 
-// Set mail To addresses
+// Add To addresses (called Addxx, since you can call this multiple times to add multiple receipiens)
 func (o *envelop) AddTo(name, addr string) {
 	a := Address{name, addr}
 	o.To = sliceIt(o.To, a)
 }
 
-// Set mail To addresses
+// Add Cc addresses
 func (o *envelop) AddCc(name, addr string) {
 	a := Address{name, addr}
 	o.Cc = sliceIt(o.Cc, a)
 }
 
-// Set mail To addresses
+// Add Bcc addresses
 func (o *envelop) AddBcc(name, addr string) {
 	a := Address{name, addr}
 	o.Bcc = sliceIt(o.Bcc, a)
 }
 
+// Add custom header (should start with X- such as X-MyHeader)
 func (env *envelop) AddHeader(token, text string) {
 	env.b.WriteString(token)
 	env.b.WriteString(": ")
@@ -94,7 +99,7 @@ func sliceIt(slice []Address, add Address) []Address {
 func (env *envelop) addHeader() {
 	env.AddHeader("MIME-Version", "1.0")
 	env.AddHeader("Content-Type", "text/plain; charset=UTF-8")
-	env.AddHeader("Message-ID", fmt.Sprintf("<%s@mailtamer.tamer.pw>", sRand(10, 16, false)))
+	env.AddHeader("Message-ID", fmt.Sprintf("<%s@%s>", sRand(10, 16, false), MessageIdLink))
 
 	for _, v := range env.To {
 		if v.Name == "" {
