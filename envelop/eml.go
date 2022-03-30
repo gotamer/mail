@@ -31,7 +31,7 @@ type envelop struct {
 	ok      bool
 }
 
-func NewEnvelop() *envelop {
+func New() *envelop {
 	return new(envelop)
 }
 
