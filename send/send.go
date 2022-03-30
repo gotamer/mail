@@ -40,7 +40,7 @@ type mail struct {
 func NewMail() *mail {
 	m := new(mail)
 	m.Headers = make(map[string]string)
-	m.SetHeader("X-Mailer", "github.com/gotamer/mail")
+	m.SetHeader("X-Mailer", "MailTamer @ github.com/gotamer/mail")
 	return m
 }
 
