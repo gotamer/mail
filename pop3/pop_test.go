@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gotamer/pop3"
+	"github.com/gotamer/mail/pop3"
 	"github.com/joho/godotenv"
 )
 
