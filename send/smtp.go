@@ -4,6 +4,8 @@ package send
 import (
 	"fmt"
 	"net/smtp"
+
+	"github.com/gotamer/mail/envelop"
 )
 
 type SmtpTamer struct {
@@ -11,7 +13,7 @@ type SmtpTamer struct {
 	HostPort int
 	HostUser string
 	HostPass string
-	Envelop  *mail
+	*envelop.Envelop
 }
 
 // Returns a smtp struct
@@ -21,27 +23,26 @@ func NewSMTP(hostname, hostuser, hostpass string) *SmtpTamer {
 	o.HostPort = 587
 	o.HostUser = hostuser
 	o.HostPass = hostpass
-	o.Envelop = NewMail()
+	o.Envelop = envelop.New()
 	return o
 }
 
 // Implementing io.Writer
-func (s *SmtpTamer) Write(data []byte) (n int, err error) {
-	n = len(data)
-	s.Envelop.Body = string(data)
+func (s *SmtpTamer) Write(body []byte) (n int, err error) {
+	n = len(body)
+	s.Envelop.SetBody(string(body))
 	err = s.Send()
 	return
 }
 
 // Sends an email and waits for the process to end, giving proper error feedback.
 func (s *SmtpTamer) Send() (err error) {
-	var format = "From: %s <%s>\r\nSubject: %s\r\n\r\n%s\r\n"
 	err = smtp.SendMail(
 		fmt.Sprintf("%s:%d", s.HostName, s.HostPort),
 		smtp.PlainAuth("", s.HostUser, s.HostPass, s.HostName),
-		s.Envelop.From,
-		s.Envelop.To,
-		[]byte(fmt.Sprintf(format, s.Envelop.FromName, s.Envelop.From, s.Envelop.Subject, s.Envelop.Body)),
+		s.Envelop.From.Email,
+		[]string{s.Envelop.To.Email},
+		s.Envelop.Bytes(),
 	)
 	return
 }
