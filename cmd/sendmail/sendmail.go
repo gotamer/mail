@@ -17,6 +17,7 @@ import (
 
 const (
 	EXT_GOB     = ".gob"
+	EXT_JSON    = ".json"
 	EXT_EML     = ".eml"
 	FILE_CONFIG = "/etc/sendmail.json"
 	DIR_QUEUE   = "/var/spool/queue/"
