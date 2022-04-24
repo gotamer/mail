@@ -1,6 +1,6 @@
 # pop3 Client lib
 
-Hostname should include the post, see below
+Hostname should include the port, see below
 
 	HostName = pop.excample.com:995
 	Username = user@excample.com
