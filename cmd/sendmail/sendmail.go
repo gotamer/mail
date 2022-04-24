@@ -1,3 +1,4 @@
+// go get github.com/gotamer/mail/cmd/sendmail
 package main
 
 import (
