@@ -1,10 +1,6 @@
-gotamer/mail/send
+gotamer/mail
 =================
-[![GoDoc Send](https://godoc.org/github.com/gotamer/mail/send?status.svg)](https://godoc.org/github.com/gotamer/mail/send)
-
-Sending mail with sendmail or smtp
-
-gotamer/mail/send implements the io.Writer interface.  
+[![GoDoc Send](https://godoc.org/github.com/gotamer/mail?status.svg)](https://godoc.org/github.com/gotamer/mail)
 
 ```bash
 $ sendmail -h
@@ -25,6 +21,18 @@ $ sendmail -h
   -t string
         Mail To email address
 ``` 
+
+Sending mail with sendmail over smtp
+```bash
+$ go get github.com/gotamer/mail/cmd/sendmail
+# cd /usr/local/bin
+# ln -s $GOBIN/sendmail
+$ sudo runuser -u mail -- sendmail -t user@example.com -s "My subject" -b "Body of mail"
+```
+
+gotamer/mail/send also implements the io.Writer interface.  
+
+
 gotamer/mail/imap
 =================
 [![GoDoc Imap](https://godoc.org/github.com/gotamer/mail/imap?status.svg)](https://godoc.org/github.com/gotamer/mail/imap)
