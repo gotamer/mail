@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 
@@ -16,11 +19,13 @@ import (
 )
 
 const (
-	EXT_GOB     = ".gob"
-	EXT_JSON    = ".json"
-	EXT_EML     = ".eml"
-	FILE_CONFIG = "/etc/sendmail.json"
-	DIR_QUEUE   = "/var/spool/queue/"
+	EXT_GOB       = ".gob"
+	EXT_JSON      = ".json"
+	EXT_EML       = ".eml"
+	FILE_CONFIG   = "/etc/sendmail.json"
+	DIR_QUEUE     = "/var/spool/queue/"
+	SOCK_PROTOCOL = "unix"
+	SOCK_ADDR     = "/tmp/mail.sock"
 )
 
 var Cfg struct {
@@ -33,17 +38,19 @@ var Cfg struct {
 }
 
 var (
-	Info     = *log.Default()
-	hostname = "mail.example.org"
-	to       = flag.String("t", "", "Mail To email address")
-	from     = flag.String("f", "", "Mail From email address")
-	subject  = flag.String("s", "", "Mail subject line")
-	body     = flag.String("b", "", "Mail body text")
-	cfg_file = flag.String("c", FILE_CONFIG, "Config file location")
-	help     = flag.Bool("h", false, "Display help")
-	runQueue = flag.Bool("run", false, "Process Queue")
-	now      = flag.Bool("now", false, "Send message now, message will not be added to Queue")
-	debug    = flag.Bool("d", false, "Debug mode")
+	Info       = *log.Default()
+	hostname   = "mail.example.org"
+	to         = flag.String("t", "", "Mail To email address")
+	from       = flag.String("f", "", "Mail From email address")
+	subject    = flag.String("s", "", "Mail subject line")
+	body       = flag.String("b", "", "Mail body text")
+	cfg_file   = flag.String("c", FILE_CONFIG, "Config file location")
+	help       = flag.Bool("h", false, "Display help")
+	runQueue   = flag.Bool("run", false, "Process Queue")
+	now        = flag.Bool("now", false, "Send message now, message will not be added to Queue")
+	sock       = flag.Bool("sock", false, "Send message to socket")
+	sockServer = flag.Bool("server", false, "Start socket server")
+	debug      = flag.Bool("d", false, "Debug mode")
 )
 
 type env struct {
@@ -101,34 +108,39 @@ func main() {
 		Info.Println("Runing Queue")
 		e.processQueue()
 		Info.Println("Queue Finished")
-		os.Exit(0)
-	}
-
-	e.env = envelop.New()
-	if *from != "" {
-		e.env.SetFrom("", *from)
+	} else if *sockServer {
+		go socketServer()
 	} else {
-		e.env.SetFrom(hostname, Cfg.Smtp.Username)
-	}
-	e.env.SetSubject(*subject)
-	e.env.SetBody(*body)
-	e.env.SetTo("", *to)
-
-	Info.Printf("smtphost: %s port: %d\n", Cfg.Smtp.Hostname, Cfg.Smtp.Hostport)
-	Info.Printf("From: %s To: %v\n", e.env.From, e.env.To)
-
-	if *now {
-		e.env.Create()
-		if err = e.sendNow(); err != nil {
-			log.Printf("Send Now error: %s", err.Error())
+		e.env = envelop.New()
+		if *from != "" {
+			e.env.SetFrom("", *from)
+		} else {
+			e.env.SetFrom(hostname, Cfg.Smtp.Username)
 		}
-	} else {
-		if err = e.sendQueue(); err != nil {
-			log.Printf(`Send Queue err: %s`, err.Error())
+		e.env.SetSubject(*subject)
+		e.env.SetBody(*body)
+		e.env.SetTo("", *to)
+
+		Info.Printf("smtphost: %s port: %d\n", Cfg.Smtp.Hostname, Cfg.Smtp.Hostport)
+		Info.Printf("From: %s To: %v\n", e.env.From, e.env.To)
+
+		if *now {
+			e.env.Create()
+			if err = e.sendNow(); err != nil {
+				log.Printf("Send Now error: %s", err.Error())
+			}
+		} else if *sock {
+			if err = e.socketClient(); err != nil {
+				log.Printf("Send to socket error: %s", err.Error())
+			}
+		} else {
+			if err = e.sendQueue(); err != nil {
+				log.Printf(`Send Queue err: %s`, err.Error())
+			}
 		}
+		Info.Println("envelop:\n", e.env.String())
+		e.env.Reset()
 	}
-	Info.Println("envelop:\n", e.env.String())
-	e.env.Reset()
 }
 
 func (e *env) sendNow() (err error) {
@@ -211,6 +223,88 @@ func (e *env) processQueue() {
 			}
 			e.env.Reset()
 		}
+	}
+}
+
+func (e *env) socketClient() (err error) {
+	conn, err := net.Dial(SOCK_PROTOCOL, SOCK_ADDR)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer conn.Close()
+
+	encoder := json.NewEncoder(conn)
+
+	err = encoder.Encode(e.env)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	Info.Println("Envelop send")
+	return
+}
+
+func socketServer() {
+	cleanup := func() {
+		if _, err := os.Stat(SOCK_ADDR); err == nil {
+			if err := os.RemoveAll(SOCK_ADDR); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
+	cleanup()
+
+	listener, err := net.Listen(SOCK_PROTOCOL, SOCK_ADDR)
+	if err != nil {
+		log.Println(err)
+	}
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+
+	go func() {
+		<-quit
+		fmt.Println("ctrl-c pressed!")
+		close(quit)
+		cleanup()
+		os.Exit(0)
+	}()
+
+	fmt.Println("> Server launched")
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(">>> accepted: ", conn.RemoteAddr().Network())
+		go payloadJson(conn)
+	}
+}
+
+func payloadJson(conn net.Conn) {
+
+	decoder := json.NewDecoder(conn)
+	//encoder := json.NewEncoder(conn)
+
+	var o = send.NewQueue()
+	err := decoder.Decode(o.Env)
+	if err != nil {
+		if err == io.EOF {
+			log.Println("EOF === closed by client  ===")
+			return
+		}
+		log.Println(err)
+		return
+	}
+
+	err = o.Send()
+	if err != nil {
+		log.Println("ERR mail send to Quene: ", err.Error())
+	} else {
+		log.Println("INF mail send to Quene")
 	}
 }
 

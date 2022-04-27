@@ -25,9 +25,12 @@ $ sendmail -h
 Sending mail with sendmail over smtp
 ```bash
 $ go get github.com/gotamer/mail/cmd/sendmail
+# mkdir  /var/spool/queue
+# chown mail:mail /var/spool/queue
 # cd /usr/local/bin
 # ln -s $GOBIN/sendmail
 $ sudo runuser -u mail -- sendmail -t user@example.com -s "My subject" -b "Body of mail"
+$ sudo runuser -u mail -- sendmail -run
 ```
 
 gotamer/mail/send also implements the io.Writer interface.  
