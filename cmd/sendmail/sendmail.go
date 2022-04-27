@@ -253,7 +253,6 @@ func socketServer() {
 			}
 		}
 	}
-
 	cleanup()
 
 	listener, err := net.Listen(SOCK_PROTOCOL, SOCK_ADDR)
@@ -272,6 +271,10 @@ func socketServer() {
 		os.Exit(0)
 	}()
 
+	if err = os.Chmod(SOCK_ADDR, 0777); err != nil {
+		log.Println(err)
+	}
+
 	fmt.Println("> Server launched")
 	for {
 		conn, err := listener.Accept()
@@ -281,6 +284,7 @@ func socketServer() {
 
 		fmt.Println(">>> accepted: ", conn.RemoteAddr().Network())
 		go payloadJson(conn)
+
 	}
 }
 
@@ -302,10 +306,12 @@ func payloadJson(conn net.Conn) {
 
 	err = o.Send()
 	if err != nil {
-		log.Println("ERR mail send to Quene: ", err.Error())
+		log.Println("mail send to Quene: ", err.Error())
 	} else {
-		log.Println("INF mail send to Quene")
+		Info.Println("mail send to Quene")
 	}
+	var e = new(env)
+	e.processQueue()
 }
 
 // Load gets your config from the json file,
