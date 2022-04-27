@@ -11,8 +11,10 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"os/user"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gotamer/mail/envelop"
 	"github.com/gotamer/mail/send"
@@ -60,7 +62,7 @@ type env struct {
 func init() {
 	var err error
 	log.SetPrefix("sendmail ERR ")
-	Info.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	flag.Parse()
 	// || *to == "" || *subject == "" || *body == "" || *runQueue == false
@@ -89,6 +91,54 @@ func init() {
 			fmt.Println("\n\tPlease edit your config file at:\n\n\t", *cfg_file)
 			fmt.Println("\n\n++++++++++++++++++++++++++++++++++++")
 			os.Exit(0)
+		}
+	}
+
+	var dirNew = path.Join(DIR_QUEUE, "new")
+	var dirSend = path.Join(DIR_QUEUE, "send")
+	var dirFailed = path.Join(DIR_QUEUE, "failed")
+
+	Info.Println("Create directories")
+	if err := os.MkdirAll(dirNew, 0755); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.MkdirAll(dirSend, 0755); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.MkdirAll(dirFailed, 0755); err != nil {
+		log.Fatal(err)
+	}
+
+	usr, err := user.Lookup("mail")
+	if err != nil {
+		log.Println(err)
+		log.Println("We need a mail user, please create")
+		os.Exit(1)
+	}
+
+	uid, err := strconv.Atoi(usr.Uid)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	gid, err := strconv.Atoi(usr.Gid)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
+	var paths = []string{DIR_QUEUE, dirNew, dirSend, dirFailed}
+	for _, pat := range paths {
+
+		files, err := os.ReadDir(pat)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, file := range files {
+			var p = path.Join(pat, file.Name())
+			if err = os.Chown(p, uid, gid); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
@@ -171,22 +221,12 @@ func (e *env) processQueue() {
 	var dirSend = path.Join(DIR_QUEUE, "send")
 	var dirFailed = path.Join(DIR_QUEUE, "failed")
 
-	Info.Println("Create directories")
-	if err := os.MkdirAll(dirNew, 0755); err != nil {
-		log.Fatal(err)
-	}
-	if err := os.MkdirAll(dirSend, 0755); err != nil {
-		log.Fatal(err)
-	}
-	if err := os.MkdirAll(dirFailed, 0755); err != nil {
-		log.Fatal(err)
-	}
-
 	Info.Println("Read: ", dirNew)
 	files, err := os.ReadDir(dirNew)
 	if err != nil {
 		log.Fatalf(`Queue Read err: %s`, err.Error())
 	}
+
 	for _, file := range files {
 		var nameGob = file.Name()
 		if filepath.Ext(nameGob) == EXT_GOB {
