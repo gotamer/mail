@@ -60,7 +60,7 @@ type env struct {
 
 func init() {
 	var err error
-	log.SetPrefix("sendmail ERR ")
+	log.SetPrefix("ERR ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	flag.Parse()
@@ -74,7 +74,7 @@ func init() {
 	}
 
 	if *debug {
-		Info.SetPrefix("sendmail INF ")
+		Info.SetPrefix("INF ")
 		Info.SetFlags(log.Ltime | log.Lshortfile)
 	} else {
 		Info.SetOutput(ioutil.Discard)
@@ -88,27 +88,39 @@ func init() {
 		} else {
 			fmt.Println("\n\n++++++++++++++++++++++++++++++++++++")
 			fmt.Println("\n\tPlease edit your config file at:\n\n\t", *cfg_file)
+			fmt.Println("\n\tThen run as root to complete setup\n\n\t")
 			fmt.Println("\n\n++++++++++++++++++++++++++++++++++++")
 			os.Exit(0)
 		}
 	}
 
-	userRoot()
-
-	if h, err := os.Hostname(); err != nil {
-		log.Println(err)
-	} else {
-		hostname = h
-	}
-	Info.Println("hostname: ", hostname)
+	envCheck()
 }
 
-func userRoot() {
+func envCheck() {
+	var usr *user.User
+	var str string
+	var err error
 
-	if usr, err := user.Current(); err != nil {
+	if str, err = os.Hostname(); err != nil {
+		log.Println(err)
+	} else {
+		hostname = str
+	}
+	Info.Println("hostname: ", hostname)
+
+	if usr, err = user.Current(); err != nil {
 		log.Fatal(err)
-	} else if usr.Username != "root" {
-		Info.Printf("User is %s, not root skipping setup", usr.Username)
+	}
+	Info.Printf("Current User is %s", usr.Username)
+
+	if *sockServer && usr.Username != "mail" {
+		log.Printf("User is %s, server must run as mail user", usr.Username)
+		os.Exit(1)
+	}
+
+	if usr.Username != "root" {
+		Info.Println("Not root skipping setup")
 		return
 	}
 
@@ -127,10 +139,10 @@ func userRoot() {
 		log.Fatal(err)
 	}
 
-	usr, err := user.Lookup("mail")
+	usr, err = user.Lookup("mail")
 	if err != nil {
 		log.Println(err)
-		log.Println("We need a mail user, please create")
+		log.Println("We need a mail user, please create one")
 		os.Exit(1)
 	}
 
