@@ -13,7 +13,6 @@ import (
 	"os/signal"
 	"os/user"
 	"path"
-	"path/filepath"
 	"strconv"
 
 	"github.com/gotamer/mail/envelop"
@@ -94,6 +93,25 @@ func init() {
 		}
 	}
 
+	userRoot()
+
+	if h, err := os.Hostname(); err != nil {
+		log.Println(err)
+	} else {
+		hostname = h
+	}
+	Info.Println("hostname: ", hostname)
+}
+
+func userRoot() {
+
+	if usr, err := user.Current(); err != nil {
+		log.Fatal(err)
+	} else if usr.Username != "root" {
+		Info.Printf("User is %s, not root skipping setup", usr.Username)
+		return
+	}
+
 	var dirNew = path.Join(DIR_QUEUE, "new")
 	var dirSend = path.Join(DIR_QUEUE, "send")
 	var dirFailed = path.Join(DIR_QUEUE, "failed")
@@ -141,13 +159,6 @@ func init() {
 			}
 		}
 	}
-
-	if h, err := os.Hostname(); err != nil {
-		log.Println(err)
-	} else {
-		hostname = h
-	}
-	Info.Println("hostname: ", hostname)
 }
 
 func main() {
@@ -229,7 +240,7 @@ func (e *env) processQueue() {
 
 	for _, file := range files {
 		var nameGob = file.Name()
-		if filepath.Ext(nameGob) == EXT_GOB {
+		if path.Ext(nameGob) == EXT_GOB {
 			var id = nameGob[:len(nameGob)-len(EXT_GOB)]
 			var nameEml = id + EXT_EML
 			Info.Println("Processing id: ", id)
@@ -305,7 +316,7 @@ func socketServer() {
 
 	go func() {
 		<-quit
-		fmt.Println("ctrl-c pressed!")
+		Info.Println("ctrl-c pressed!")
 		close(quit)
 		cleanup()
 		os.Exit(0)
@@ -315,14 +326,14 @@ func socketServer() {
 		log.Println(err)
 	}
 
-	fmt.Println("> Server launched")
+	Info.Println("> Server launched")
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(">>> accepted: ", conn.RemoteAddr().Network())
+		Info.Println(">>> accepted: ", conn.RemoteAddr().Network())
 		go payloadJson(conn)
 
 	}

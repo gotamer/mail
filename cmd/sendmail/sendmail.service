@@ -1,0 +1,15 @@
+[Unit]
+Description=sendmail service
+After=multi-user.target network.target
+
+[Service]
+User=mail
+Group=mail
+ExecStart=/usr/bin/sendmail -server
+WorkingDirectory=/var/spool
+PIDFile=/run/sendmail.pid
+RestartSec=1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
