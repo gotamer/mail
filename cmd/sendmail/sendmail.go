@@ -109,7 +109,7 @@ func main() {
 		e.processQueue()
 		Info.Println("Queue Finished")
 	} else if *sockServer {
-		go socketServer()
+		socketServer()
 	} else {
 		e.env = envelop.New()
 		if *from != "" {
